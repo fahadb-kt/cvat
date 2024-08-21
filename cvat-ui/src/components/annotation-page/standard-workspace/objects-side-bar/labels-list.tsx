@@ -1,4 +1,5 @@
-// Copyright (C) 2020-2021 Intel Corporation
+// Copyright (C) 2020-2022 Intel Corporation
+// Copyright (C) 2022-2024 CVAT.ai Corporation
 //
 // SPDX-License-Identifier: MIT
 
@@ -6,18 +7,35 @@ import React, { useCallback, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import message from 'antd/lib/message';
 
-import { CombinedState } from 'reducers/interfaces';
+import { LabelType } from 'cvat-core-wrapper';
+import { CombinedState, ObjectType } from 'reducers';
 import { rememberObject, updateAnnotationsAsync } from 'actions/annotation-actions';
 import LabelItemContainer from 'containers/annotation-page/standard-workspace/objects-side-bar/label-item';
 import GlobalHotKeys from 'utils/mousetrap-react';
+import Text from 'antd/lib/typography/Text';
+import { ShortcutScope } from 'utils/enums';
+import { registerComponentShortcuts } from 'actions/shortcuts-actions';
+import { subKeyMap } from 'utils/component-subkeymap';
+
+const componentShortcuts = {
+    SWITCH_LABEL: {
+        name: 'Switch label',
+        description: 'Changes a label for an activated object or for the next drawn object if no objects are activated',
+        sequences: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'].map((val: string): string => `ctrl+${val}`),
+        scope: ShortcutScope.ALL,
+    },
+};
+
+registerComponentShortcuts(componentShortcuts);
 
 function LabelsListComponent(): JSX.Element {
     const dispatch = useDispatch();
     const labels = useSelector((state: CombinedState) => state.annotation.job.labels);
     const activatedStateID = useSelector((state: CombinedState) => state.annotation.annotations.activatedStateID);
+    const activeShapeType = useSelector((state: CombinedState) => state.annotation.drawing.activeShapeType);
+    const activeObjectType = useSelector((state: CombinedState) => state.annotation.drawing.activeObjectType);
     const states = useSelector((state: CombinedState) => state.annotation.annotations.states);
     const keyMap = useSelector((state: CombinedState) => state.shortcuts.keyMap);
-
     const labelIDs = labels.map((label: any): number => label.id);
 
     const [keyToLabelMapping, setKeyToLabelMapping] = useState<Record<string, number>>(
@@ -60,11 +78,7 @@ function LabelsListComponent(): JSX.Element {
         [keyToLabelMapping],
     );
 
-    const subKeyMap = {
-        SWITCH_LABEL: keyMap.SWITCH_LABEL,
-    };
-
-    const handlers = {
+    const handlers: Record<keyof typeof componentShortcuts, (event: KeyboardEvent, shortcut: string) => void> = {
         SWITCH_LABEL: (event: KeyboardEvent | undefined, shortcut: string) => {
             if (event) event.preventDefault();
             const labelID = keyToLabelMapping[shortcut.split('+')[1].trim()];
@@ -72,14 +86,22 @@ function LabelsListComponent(): JSX.Element {
             if (Number.isInteger(labelID) && label) {
                 if (Number.isInteger(activatedStateID)) {
                     const activatedState = states.filter((state: any) => state.clientID === activatedStateID)[0];
-                    if (activatedState) {
+                    const bothAreTags = activatedState.objectType === ObjectType.TAG && label.type === ObjectType.TAG;
+                    const labelIsApplicable = label.type === LabelType.ANY ||
+                        activatedState.shapeType === label.type || bothAreTags;
+                    if (activatedState && labelIsApplicable) {
                         activatedState.label = label;
                         dispatch(updateAnnotationsAsync([activatedState]));
                     }
                 } else {
-                    dispatch(rememberObject({ activeLabelID: labelID }));
-                    message.destroy();
-                    message.success(`Default label was changed to "${label.name}"`);
+                    const bothAreTags = activeObjectType === ObjectType.TAG && label.type === ObjectType.TAG;
+                    const labelIsApplicable = label.type === LabelType.ANY ||
+                        activeShapeType === label.type || bothAreTags;
+                    if (labelIsApplicable) {
+                        dispatch(rememberObject({ activeLabelID: labelID }));
+                        message.destroy();
+                        message.success(`Default label has been changed to "${label.name}"`);
+                    }
                 }
             }
         },
@@ -87,7 +109,10 @@ function LabelsListComponent(): JSX.Element {
 
     return (
         <div className='cvat-objects-sidebar-labels-list'>
-            <GlobalHotKeys keyMap={subKeyMap} handlers={handlers} />
+            <GlobalHotKeys keyMap={subKeyMap(componentShortcuts, keyMap)} handlers={handlers} />
+            <div className='cvat-objects-sidebar-labels-list-header'>
+                <Text>{`Items: ${labels.length}`}</Text>
+            </div>
             {labelIDs.map(
                 (labelID: number): JSX.Element => (
                     <LabelItemContainer

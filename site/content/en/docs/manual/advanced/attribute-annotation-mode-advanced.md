@@ -2,9 +2,11 @@
 title: 'Attribute annotation mode (advanced)'
 linkTitle: 'Attribute annotation mode'
 weight: 6
+description: 'Advanced operations available in attribute annotation mode.'
 ---
 
-Basic operations in the mode were described in section [attribute annotation mode (basics)](/docs/manual/basics/attribute-annotation-mode-basics/).
+Basic operations in the mode were described in section
+{{< ilink "/docs/manual/basics/attribute-annotation-mode-basics" "attribute annotation mode (basics)" >}}.
 
 It is possible to handle lots of objects on the same frame in the mode.
 

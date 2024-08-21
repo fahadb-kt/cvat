@@ -1,33 +1,29 @@
 ---
 title: 'Serverless tutorial'
 linkTitle: 'Serverless tutorial'
-weight: 100
+weight: 32
 ---
 
 ## Introduction
 
-Computers have now become our partners. They help us to solve routine problems,
-fix mistakes, find information, etc. It is a natural idea to use their
-compute power to annotate datasets. There are multiple DL models for
-classification, object detection, semantic segmentation which can do
-data annotation for us. And it is relatively simple to integrate your
-own ML/DL solution into CVAT.
+Leveraging the power of computers to solve daily routine problems,
+fix mistakes, and find information has become second nature. It is therefore
+natural to use computing power in annotating datasets. There are multiple
+publicly available DL models for classification, object detection, and semantic
+segmentation which can be used for data annotation. Whilst some of these publicly
+available DL models can be found on CVAT, it is relatively simple to integrate your
+privately trained ML/DL model into CVAT.
 
-But the world is not perfect and we don't have a silver bullet which can
-solve all our problems. Usually, available DL models are trained on public
-datasets which cannot cover all specific cases. Very often you want to
-detect objects which cannot be recognized by these models. Our annotation
-requirements can be so strict that automatically
-annotated objects cannot be accepted as is, and it is easier to annotate them
-from scratch. You always need to keep in mind all these mentioned limitations.
-Even if you have a DL solution which can
-_perfectly_ annotate 50% of your data, it means that manual work will only be
-reduced in half.
+With the imperfection of the world, alongside the unavailability of a silver bullet
+that can solve all our problems; publicly available DL models cannot be used when we
+want to detect niche or specific objects on which these publicly available models were not trained.
+As annotation requirements can be sometimes strict, automatically annotated objects cannot be accepted
+as it is, and it is easier to annotate them from scratch. With these limitations in mind, a DL solution
+that can _perfectly_ annotate 50% of your data equates to reducing manual annotation by half.
 
-When we know that DL models can help us to annotate data faster, the next
-question is how to use them? In CVAT all such DL models are implemented
-as serverless functions for the [Nuclio][nuclio-homepage] serverless platform.
-And there are multiple implemented functions which can be
+Since we know DL models can help us to annotate faster, how then do we use them?
+In CVAT all such DL models are implemented as serverless functions using the [Nuclio][nuclio-homepage]
+serverless platform. There are multiple implemented functions that can be
 found in the [serverless][cvat-builtin-serverless] directory such as _Mask RCNN,
 Faster RCNN, SiamMask, Inside Outside Guidance, Deep Extreme Cut_, etc.
 Follow [the installation guide][cvat-auto-annotation-guide] to build and deploy
@@ -59,17 +55,19 @@ the tutorial.
 
 In the tutorial it is assumed that you already have the cloned
 [CVAT GitHub repo][cvat-github].
-To build CVAT with serverless support you need to run `docker-compose` command
+To build CVAT with serverless support you need to run `docker compose` command
 with specific configuration files. In the case it is `docker-compose.serverless.yml`.
 It has necessary instructions how to build and deploy Nuclio platform as a
 docker container and enable corresponding support in CVAT.
 
-```console
-$ docker-compose -f docker-compose.yml -f docker-compose.dev.yml -f components/serverless/docker-compose.serverless.yml up -d --build
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dev.yml -f components/serverless/docker-compose.serverless.yml up -d --build
 ```
 
-```console
-$ docker-compose -f docker-compose.yml -f docker-compose.dev.yml -f components/serverless/docker-compose.serverless.yml ps
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dev.yml -f components/serverless/docker-compose.serverless.yml ps
+```
+```
    Name                 Command                  State                            Ports
 -------------------------------------------------------------------------------------------------------------
 cvat         /usr/bin/supervisord             Up             8080/tcp
@@ -87,8 +85,10 @@ is already installed on your operating system. Run the following
 command to check that it works. In the beginning you should not have
 any deployed serverless functions.
 
-```console
-$ nuctl get functions
+```bash
+nuctl get functions
+```
+```
 No functions found
 ```
 
@@ -104,27 +104,33 @@ First step is to deploy [SiamMask][siammask-serverless]. The deployment process
 can depend on your operating system. On Linux you can use `serverless/deploy_cpu.sh`
 auxiliary script, but below we are using `nuctl` directly.
 
-```console
-$ nuctl create project cvat
+```bash
+nuctl create project cvat
 
 nuctl deploy --project-name cvat --path "./serverless/pytorch/foolwood/siammask/nuclio" --platform local
-21.05.07 13:00:22.233                     nuctl (I) Deploying function {"name": ""}
-21.05.07 13:00:22.233                     nuctl (I) Building {"versionInfo": "Label: 1.5.16, Git commit: ae43a6a560c2bec42d7ccfdf6e8e11a1e3cc3774, OS: linux, Arch: amd64, Go version: go1.14.3", "name": ""}
-21.05.07 13:00:22.652                     nuctl (I) Cleaning up before deployment {"functionName": "pth-foolwood-siammask"}
-21.05.07 13:00:22.705                     nuctl (I) Staging files and preparing base images
-21.05.07 13:00:22.706                     nuctl (I) Building processor image {"imageName": "cvat/pth.foolwood.siammask:latest"}
-21.05.07 13:00:22.706     nuctl.platform.docker (I) Pulling image {"imageName": "quay.io/nuclio/handler-builder-python-onbuild:1.5.16-amd64"}
-21.05.07 13:00:26.351     nuctl.platform.docker (I) Pulling image {"imageName": "quay.io/nuclio/uhttpc:0.0.1-amd64"}
-21.05.07 13:00:29.819            nuctl.platform (I) Building docker image {"image": "cvat/pth.foolwood.siammask:latest"}
-21.05.07 13:00:30.103            nuctl.platform (I) Pushing docker image into registry {"image": "cvat/pth.foolwood.siammask:latest", "registry": ""}
-21.05.07 13:00:30.103            nuctl.platform (I) Docker image was successfully built and pushed into docker registry {"image": "cvat/pth.foolwood.siammask:latest"}
-21.05.07 13:00:30.104                     nuctl (I) Build complete {"result": {"Image":"cvat/pth.foolwood.siammask:latest","UpdatedFunctionConfig":{"metadata":{"name":"pth-foolwood-siammask","namespace":"nuclio","labels":{"nuclio.io/project-name":"cvat"},"annotations":{"framework":"pytorch","name":"SiamMask","spec":"","type":"tracker"}},"spec":{"description":"Fast Online Object Tracking and Segmentation","handler":"main:handler","runtime":"python:3.6","env":[{"name":"PYTHONPATH","value":"/opt/nuclio/SiamMask:/opt/nuclio/SiamMask/experiments/siammask_sharp"}],"resources":{},"image":"cvat/pth.foolwood.siammask:latest","targetCPU":75,"triggers":{"myHttpTrigger":{"class":"","kind":"http","name":"myHttpTrigger","maxWorkers":2,"workerAvailabilityTimeoutMilliseconds":10000,"attributes":{"maxRequestBodySize":33554432}}},"build":{"image":"cvat/pth.foolwood.siammask","baseImage":"continuumio/miniconda3","directives":{"preCopy":[{"kind":"WORKDIR","value":"/opt/nuclio"},{"kind":"RUN","value":"conda create -y -n siammask python=3.6"},{"kind":"SHELL","value":"[\"conda\", \"run\", \"-n\", \"siammask\", \"/bin/bash\", \"-c\"]"},{"kind":"RUN","value":"git clone https://github.com/foolwood/SiamMask.git"},{"kind":"RUN","value":"pip install -r SiamMask/requirements.txt jsonpickle"},{"kind":"RUN","value":"conda install -y gcc_linux-64"},{"kind":"RUN","value":"cd SiamMask \u0026\u0026 bash make.sh \u0026\u0026 cd -"},{"kind":"RUN","value":"wget -P SiamMask/experiments/siammask_sharp http://www.robots.ox.ac.uk/~qwang/SiamMask_DAVIS.pth"},{"kind":"ENTRYPOINT","value":"[\"conda\", \"run\", \"-n\", \"siammask\"]"}]},"codeEntryType":"image"},"platform":{"attributes":{"mountMode":"volume","restartPolicy":{"maximumRetryCount":3,"name":"always"}}},"readinessTimeoutSeconds":60,"securityContext":{},"eventTimeout":"30s"}}}}
-21.05.07 13:00:31.387            nuctl.platform (I) Waiting for function to be ready {"timeout": 60}
-21.05.07 13:00:32.796                     nuctl (I) Function deploy complete {"functionName": "pth-foolwood-siammask", "httpPort": 49155}
+```
+```
+24.04.18 20:52:47.910 (I)                     nuctl Deploying function {"name": "pth-foolwood-siammask"}
+24.04.18 20:52:47.910 (I)                     nuctl Building {"builderKind": "docker", "versionInfo": "Label: 1.13.0, Git commit: c4422eb772781fb50fbf017698aae96199d81388, OS: linux, Arch: amd64, Go version: go1.21.7", "name": "pth-foolwood-siammask"}
+24.04.18 20:52:47.929 (W)            nuctl.platform MaxWorkers is deprecated and will be removed in v1.15.x, use NumWorkers instead
+24.04.18 20:52:48.044 (I)                     nuctl Staging files and preparing base images
+24.04.18 20:52:48.044 (W)                     nuctl Using user provided base image, runtime interpreter version is provided by the base image {"baseImage": "ubuntu:20.04"}
+24.04.18 20:52:48.044 (I)                     nuctl Building processor image {"registryURL": "", "taggedImageName": "cvat.pth.foolwood.siammask:latest"}
+24.04.18 20:52:48.044 (I)     nuctl.platform.docker Pulling image {"imageName": "quay.io/nuclio/handler-builder-python-onbuild:1.13.0-amd64"}
+24.04.18 20:52:49.717 (I)     nuctl.platform.docker Pulling image {"imageName": "quay.io/nuclio/uhttpc:0.0.1-amd64"}
+24.04.18 20:52:51.363 (I)            nuctl.platform Building docker image {"image": "cvat.pth.foolwood.siammask:latest"}
+24.04.18 20:55:58.853 (I)            nuctl.platform Pushing docker image into registry {"image": "cvat.pth.foolwood.siammask:latest", "registry": ""}
+24.04.18 20:55:58.853 (I)            nuctl.platform Docker image was successfully built and pushed into docker registry {"image": "cvat.pth.foolwood.siammask:latest"}
+24.04.18 20:55:58.853 (I)                     nuctl Build complete {"image": "cvat.pth.foolwood.siammask:latest"}
+24.04.18 20:55:58.861 (I)                     nuctl Cleaning up before deployment {"functionName": "pth-foolwood-siammask"}
+24.04.18 20:55:59.593 (I)            nuctl.platform Waiting for function to be ready {"timeout": 120}
+24.04.18 20:56:01.315 (I)                     nuctl Function deploy complete {"functionName": "pth-foolwood-siammask", "httpPort": 33453, "internalInvocationURLs": ["172.17.0.5:8080"], "externalInvocationURLs": ["0.0.0.0:33453"]}
 ```
 
-```console
-$ nuctl get functions
+```bash
+nuctl get functions
+```
+```
   NAMESPACE |         NAME          | PROJECT | STATE | NODE PORT | REPLICAS
   nuclio    | pth-foolwood-siammask | cvat    | ready |     49155 | 1/1
 ```
@@ -145,13 +151,17 @@ finish the process.
 ![Create a video annotation task](/images/create_video_task.png)
 
 Open the task and use [AI tools][cvat-ai-tools-user-guide] to start tracking
-an object. Draw a bounding box around an object.
+an object. Draw a bounding box around an object, and sequentially switch
+through the frame and correct the restrictive box if necessary.
 
-![Start tracking an object](/images/start_tracking.png)
+![Start tracking an object](/images/trackers_tab.jpg)
 
-Finally you will get bounding boxes for 10 frames by default.
+Finally you will get bounding boxes.
 
 ![SiamMask results](/images/siammask_results.gif)
+
+`SiamMask` model is more optimized to work on Nvidia GPUs.
+For more information about deploying the model for the GPU, [read on](#objects-segmentation-using-mask-rcnn).
 
 ### Object detection using YOLO-v3
 
@@ -164,13 +174,13 @@ command. Inference of the serverless function is optimized for CPU using
 <details>
 <summary>
 
-```console
-$ serverless/deploy_cpu.sh serverless/openvino/omz/public/yolo-v3-tf/
+```bash
+serverless/deploy_cpu.sh serverless/openvino/omz/public/yolo-v3-tf/
 ```
 
 </summary>
 
-```console
+```
 Deploying serverless/openvino/omz/public/yolo-v3-tf function...
 21.07.12 15:55:17.314                     nuctl (I) Deploying function {"name": ""}
 21.07.12 15:55:17.314                     nuctl (I) Building {"versionInfo": "Label: 1.5.16, Git commit: ae43a6a560c2bec42d7ccfdf6e8e11a1e3cc3774, OS: linux, Arch: amd64, Go version: go1.14.3", "name": ""}
@@ -230,13 +240,13 @@ autoscaler does not support the local platform (docker)._
 <details>
 <summary>
 
-```console
-$ serverless/deploy_gpu.sh serverless/tensorflow/matterport/mask_rcnn
+```bash
+serverless/deploy_gpu.sh serverless/tensorflow/matterport/mask_rcnn
 ```
 
 </summary>
 
-```console
+```
 Deploying serverless/tensorflow/matterport/mask_rcnn function...
 21.07.12 16:48:48.995                     nuctl (I) Deploying function {"name": ""}
 21.07.12 16:48:48.995                     nuctl (I) Building {"versionInfo": "Label: 1.5.16, Git commit: ae43a6a560c2bec42d7ccfdf6e8e11a1e3cc3774, OS: linux, Arch: amd64, Go version: go1.14.3", "name": ""}
@@ -276,9 +286,9 @@ of computer vision research projects and production applications in Facebook.
 Clone the repository somewhere. I assume that all other experiments will be
 run from the cloned `detectron2` directory.
 
-```console
-$ git clone https://github.com/facebookresearch/detectron2
-$ cd detectron2
+```bash
+git clone https://github.com/facebookresearch/detectron2
+cd detectron2
 ```
 
 ### Run local experiments
@@ -291,18 +301,18 @@ In my case I have Ubuntu 20.04 with python 3.8.5. I installed
 a virtual environment. Follow [opencv-python][opencv-python-github]
 installation guide to get the library for demo and visualization.
 
-```console
-$ python3 -m venv .detectron2
-$ . .detectron2/bin/activate
-$ pip install torch==1.8.1+cpu torchvision==0.9.1+cpu torchaudio==0.8.1 -f https://download.pytorch.org/whl/torch_stable.html
-$ pip install opencv-python
+```bash
+python3 -m venv .detectron2
+. .detectron2/bin/activate
+pip install torch==1.8.1+cpu torchvision==0.9.1+cpu torchaudio==0.8.1 -f https://download.pytorch.org/whl/torch_stable.html
+pip install opencv-python
 ```
 
 Install the detectron2 library from your local clone (you should be inside
 detectron2 directory).
 
-```console
-$ python -m pip install -e .
+```bash
+python -m pip install -e .
 ```
 
 After the library from Facebook AI Research is installed, we can run a couple
@@ -310,22 +320,22 @@ of experiments. See the [official tutorial][detectron2-tutorial] for more
 examples. I decided to experiment with [RetinaNet][retinanet-model-zoo]. First
 step is to download model weights.
 
-```console
-$ curl -O https://dl.fbaipublicfiles.com/detectron2/COCO-Detection/retinanet_R_101_FPN_3x/190397697/model_final_971ab9.pkl
+```bash
+curl -O https://dl.fbaipublicfiles.com/detectron2/COCO-Detection/retinanet_R_101_FPN_3x/190397697/model_final_971ab9.pkl
 ```
 
 To run experiments let's download an image with cats from wikipedia.
 
-```console
-$ curl -O https://upload.wikimedia.org/wikipedia/commons/thumb/0/0b/Cat_poster_1.jpg/1920px-Cat_poster_1.jpg
+```bash
+curl -O https://upload.wikimedia.org/wikipedia/commons/thumb/0/0b/Cat_poster_1.jpg/1920px-Cat_poster_1.jpg
 ```
 
 Finally let's run the DL model inference on CPU. If all is fine, you will see
 a window with cats and bounding boxes around them with scores.
 
-```console
-$ python demo/demo.py --config-file configs/COCO-Detection/retinanet_R_101_FPN_3x.yaml \
-    --input 1920px-Cat_poster_1.jpg --opts MODEL.WEIGHTS model_final_971ab9.pkl MODEL.DEVICE cpu
+```bash
+python demo/demo.py --config-file configs/COCO-Detection/retinanet_R_101_FPN_3x.yaml \
+  --input 1920px-Cat_poster_1.jpg --opts MODEL.WEIGHTS model_final_971ab9.pkl MODEL.DEVICE cpu
 ```
 
 ![Cats detected by RetinaNet R101](/images/detectron2_detected_cats.jpg)
@@ -384,7 +394,7 @@ will look like...
 Let's look at [faster_rcnn_inception_v2_coco][faster-rcnn-function] serverless
 function configuration as an example and try adapting it to our case.
 First of all let's invent an unique name for the new function:
-`pth.facebookresearch.detectron2.retinanet_r101`. Section `annotations`
+`pth-facebookresearch-detectron2-retinanet-r101`. Section `annotations`
 describes our function for CVAT serverless subsystem:
 
 - `annotations.name` is a display name
@@ -425,12 +435,11 @@ For Nuclio platform we have to specify a couple of more parameters:
 
 ```yaml
 metadata:
-  name: pth.facebookresearch.detectron2.retinanet_r101
+  name: pth-facebookresearch-detectron2-retinanet-r101
   namespace: cvat
   annotations:
     name: RetinaNet R101
     type: detector
-    framework: pytorch
     spec: |
       [
         { "id": 1, "name": "person" },
@@ -493,7 +502,7 @@ into memory using `init_context(context)` function. Read more about the function
 in [Best Practices and Common Pitfalls][nuclio-bkms-doc].
 
 After that we need to accept incoming HTTP requests, run inference,
-reply with detection results. For the process our entry point is resposible
+reply with detection results. For the process our entry point is responsible
 which we specified in our function specification `handler(context, event)`.
 Again in accordance to function specification the entry point should be
 located inside `main.py`.
@@ -555,17 +564,17 @@ The actual deployment process is described in
 <details>
 <summary>
 
-```console
-$ ./serverless/deploy_cpu.sh ./serverless/pytorch/facebookresearch/detectron2/retinanet/
+```bash
+./serverless/deploy_cpu.sh ./serverless/pytorch/facebookresearch/detectron2/retinanet/
 ```
 
 </summary>
 
-```console
+```
 21.07.21 15:20:31.011                     nuctl (I) Deploying function {"name": ""}
 21.07.21 15:20:31.011                     nuctl (I) Building {"versionInfo": "Label: 1.5.16, Git commit: ae43a6a560c2bec42d7ccfdf6e8e11a1e3cc3774, OS: linux, Arch: amd64, Go version: go1.14.3", "name": ""}
-21.07.21 15:20:31.407                     nuctl (I) Cleaning up before deployment {"functionName": "pth.facebookresearch.detectron2.retinanet_r101"}
-21.07.21 15:20:31.497                     nuctl (I) Function already exists, deleting function containers {"functionName": "pth.facebookresearch.detectron2.retinanet_r101"}
+21.07.21 15:20:31.407                     nuctl (I) Cleaning up before deployment {"functionName": "pth-facebookresearch-detectron2-retinanet-r101"}
+21.07.21 15:20:31.497                     nuctl (I) Function already exists, deleting function containers {"functionName": "pth-facebookresearch-detectron2-retinanet-r101"}
 21.07.21 15:20:31.914                     nuctl (I) Staging files and preparing base images
 21.07.21 15:20:31.915                     nuctl (I) Building processor image {"imageName": "cvat/pth.facebookresearch.detectron2.retinanet_r101:latest"}
 21.07.21 15:20:31.916     nuctl.platform.docker (I) Pulling image {"imageName": "quay.io/nuclio/handler-builder-python-onbuild:1.5.16-amd64"}
@@ -573,9 +582,9 @@ $ ./serverless/deploy_cpu.sh ./serverless/pytorch/facebookresearch/detectron2/re
 21.07.21 15:20:37.524            nuctl.platform (I) Building docker image {"image": "cvat/pth.facebookresearch.detectron2.retinanet_r101:latest"}
 21.07.21 15:20:37.852            nuctl.platform (I) Pushing docker image into registry {"image": "cvat/pth.facebookresearch.detectron2.retinanet_r101:latest", "registry": ""}
 21.07.21 15:20:37.853            nuctl.platform (I) Docker image was successfully built and pushed into docker registry {"image": "cvat/pth.facebookresearch.detectron2.retinanet_r101:latest"}
-21.07.21 15:20:37.853                     nuctl (I) Build complete {"result": {"Image":"cvat/pth.facebookresearch.detectron2.retinanet_r101:latest","UpdatedFunctionConfig":{"metadata":{"name":"pth.facebookresearch.detectron2.retinanet_r101","namespace":"nuclio","labels":{"nuclio.io/project-name":"cvat"},"annotations":{"framework":"pytorch","name":"RetinaNet R101","spec":"[\n  { \"id\": 1, \"name\": \"person\" },\n  { \"id\": 2, \"name\": \"bicycle\" },\n  { \"id\": 3, \"name\": \"car\" },\n  { \"id\": 4, \"name\": \"motorcycle\" },\n  { \"id\": 5, \"name\": \"airplane\" },\n  { \"id\": 6, \"name\": \"bus\" },\n  { \"id\": 7, \"name\": \"train\" },\n  { \"id\": 8, \"name\": \"truck\" },\n  { \"id\": 9, \"name\": \"boat\" },\n  { \"id\":10, \"name\": \"traffic_light\" },\n  { \"id\":11, \"name\": \"fire_hydrant\" },\n  { \"id\":13, \"name\": \"stop_sign\" },\n  { \"id\":14, \"name\": \"parking_meter\" },\n  { \"id\":15, \"name\": \"bench\" },\n  { \"id\":16, \"name\": \"bird\" },\n  { \"id\":17, \"name\": \"cat\" },\n  { \"id\":18, \"name\": \"dog\" },\n  { \"id\":19, \"name\": \"horse\" },\n  { \"id\":20, \"name\": \"sheep\" },\n  { \"id\":21, \"name\": \"cow\" },\n  { \"id\":22, \"name\": \"elephant\" },\n  { \"id\":23, \"name\": \"bear\" },\n  { \"id\":24, \"name\": \"zebra\" },\n  { \"id\":25, \"name\": \"giraffe\" },\n  { \"id\":27, \"name\": \"backpack\" },\n  { \"id\":28, \"name\": \"umbrella\" },\n  { \"id\":31, \"name\": \"handbag\" },\n  { \"id\":32, \"name\": \"tie\" },\n  { \"id\":33, \"name\": \"suitcase\" },\n  { \"id\":34, \"name\": \"frisbee\" },\n  { \"id\":35, \"name\": \"skis\" },\n  { \"id\":36, \"name\": \"snowboard\" },\n  { \"id\":37, \"name\": \"sports_ball\" },\n  { \"id\":38, \"name\": \"kite\" },\n  { \"id\":39, \"name\": \"baseball_bat\" },\n  { \"id\":40, \"name\": \"baseball_glove\" },\n  { \"id\":41, \"name\": \"skateboard\" },\n  { \"id\":42, \"name\": \"surfboard\" },\n  { \"id\":43, \"name\": \"tennis_racket\" },\n  { \"id\":44, \"name\": \"bottle\" },\n  { \"id\":46, \"name\": \"wine_glass\" },\n  { \"id\":47, \"name\": \"cup\" },\n  { \"id\":48, \"name\": \"fork\" },\n  { \"id\":49, \"name\": \"knife\" },\n  { \"id\":50, \"name\": \"spoon\" },\n  { \"id\":51, \"name\": \"bowl\" },\n  { \"id\":52, \"name\": \"banana\" },\n  { \"id\":53, \"name\": \"apple\" },\n  { \"id\":54, \"name\": \"sandwich\" },\n  { \"id\":55, \"name\": \"orange\" },\n  { \"id\":56, \"name\": \"broccoli\" },\n  { \"id\":57, \"name\": \"carrot\" },\n  { \"id\":58, \"name\": \"hot_dog\" },\n  { \"id\":59, \"name\": \"pizza\" },\n  { \"id\":60, \"name\": \"donut\" },\n  { \"id\":61, \"name\": \"cake\" },\n  { \"id\":62, \"name\": \"chair\" },\n  { \"id\":63, \"name\": \"couch\" },\n  { \"id\":64, \"name\": \"potted_plant\" },\n  { \"id\":65, \"name\": \"bed\" },\n  { \"id\":67, \"name\": \"dining_table\" },\n  { \"id\":70, \"name\": \"toilet\" },\n  { \"id\":72, \"name\": \"tv\" },\n  { \"id\":73, \"name\": \"laptop\" },\n  { \"id\":74, \"name\": \"mouse\" },\n  { \"id\":75, \"name\": \"remote\" },\n  { \"id\":76, \"name\": \"keyboard\" },\n  { \"id\":77, \"name\": \"cell_phone\" },\n  { \"id\":78, \"name\": \"microwave\" },\n  { \"id\":79, \"name\": \"oven\" },\n  { \"id\":80, \"name\": \"toaster\" },\n  { \"id\":81, \"name\": \"sink\" },\n  { \"id\":83, \"name\": \"refrigerator\" },\n  { \"id\":84, \"name\": \"book\" },\n  { \"id\":85, \"name\": \"clock\" },\n  { \"id\":86, \"name\": \"vase\" },\n  { \"id\":87, \"name\": \"scissors\" },\n  { \"id\":88, \"name\": \"teddy_bear\" },\n  { \"id\":89, \"name\": \"hair_drier\" },\n  { \"id\":90, \"name\": \"toothbrush\" }\n]\n","type":"detector"}},"spec":{"description":"RetinaNet R101 from Detectron2","handler":"main:handler","runtime":"python:3.8","resources":{},"image":"cvat/pth.facebookresearch.detectron2.retinanet_r101:latest","targetCPU":75,"triggers":{"myHttpTrigger":{"class":"","kind":"http","name":"myHttpTrigger","maxWorkers":2,"workerAvailabilityTimeoutMilliseconds":10000,"attributes":{"maxRequestBodySize":33554432}}},"volumes":[{"volume":{"name":"volume-1","hostPath":{"path":"/home/nmanovic/Workspace/cvat/serverless/common"}},"volumeMount":{"name":"volume-1","mountPath":"/opt/nuclio/common"}}],"build":{"image":"cvat/pth.facebookresearch.detectron2.retinanet_r101","baseImage":"ubuntu:20.04","directives":{"preCopy":[{"kind":"ENV","value":"DEBIAN_FRONTEND=noninteractive"},{"kind":"RUN","value":"apt-get update \u0026\u0026 apt-get -y install curl git python3 python3-pip"},{"kind":"WORKDIR","value":"/opt/nuclio"},{"kind":"RUN","value":"pip3 install torch==1.8.1+cpu torchvision==0.9.1+cpu torchaudio==0.8.1 -f https://download.pytorch.org/whl/torch_stable.html"},{"kind":"RUN","value":"pip3 install 'git+https://github.com/facebookresearch/detectron2@v0.4'"},{"kind":"RUN","value":"curl -O https://dl.fbaipublicfiles.com/detectron2/COCO-Detection/retinanet_R_101_FPN_3x/190397697/model_final_971ab9.pkl"},{"kind":"RUN","value":"ln -s /usr/bin/pip3 /usr/local/bin/pip"}]},"codeEntryType":"image"},"platform":{"attributes":{"mountMode":"volume","restartPolicy":{"maximumRetryCount":3,"name":"always"}}},"readinessTimeoutSeconds":60,"securityContext":{},"eventTimeout":"30s"}}}}
+21.07.21 15:20:37.853                     nuctl (I) Build complete {"result": {"Image":"cvat/pth.facebookresearch.detectron2.retinanet_r101:latest","UpdatedFunctionConfig":{"metadata":{"name":"pth-facebookresearch-detectron2-retinanet-r101","namespace":"nuclio","labels":{"nuclio.io/project-name":"cvat"},"annotations":{"framework":"pytorch","name":"RetinaNet R101","spec":"[\n  { \"id\": 1, \"name\": \"person\" },\n  { \"id\": 2, \"name\": \"bicycle\" },\n  { \"id\": 3, \"name\": \"car\" },\n  { \"id\": 4, \"name\": \"motorcycle\" },\n  { \"id\": 5, \"name\": \"airplane\" },\n  { \"id\": 6, \"name\": \"bus\" },\n  { \"id\": 7, \"name\": \"train\" },\n  { \"id\": 8, \"name\": \"truck\" },\n  { \"id\": 9, \"name\": \"boat\" },\n  { \"id\":10, \"name\": \"traffic_light\" },\n  { \"id\":11, \"name\": \"fire_hydrant\" },\n  { \"id\":13, \"name\": \"stop_sign\" },\n  { \"id\":14, \"name\": \"parking_meter\" },\n  { \"id\":15, \"name\": \"bench\" },\n  { \"id\":16, \"name\": \"bird\" },\n  { \"id\":17, \"name\": \"cat\" },\n  { \"id\":18, \"name\": \"dog\" },\n  { \"id\":19, \"name\": \"horse\" },\n  { \"id\":20, \"name\": \"sheep\" },\n  { \"id\":21, \"name\": \"cow\" },\n  { \"id\":22, \"name\": \"elephant\" },\n  { \"id\":23, \"name\": \"bear\" },\n  { \"id\":24, \"name\": \"zebra\" },\n  { \"id\":25, \"name\": \"giraffe\" },\n  { \"id\":27, \"name\": \"backpack\" },\n  { \"id\":28, \"name\": \"umbrella\" },\n  { \"id\":31, \"name\": \"handbag\" },\n  { \"id\":32, \"name\": \"tie\" },\n  { \"id\":33, \"name\": \"suitcase\" },\n  { \"id\":34, \"name\": \"frisbee\" },\n  { \"id\":35, \"name\": \"skis\" },\n  { \"id\":36, \"name\": \"snowboard\" },\n  { \"id\":37, \"name\": \"sports_ball\" },\n  { \"id\":38, \"name\": \"kite\" },\n  { \"id\":39, \"name\": \"baseball_bat\" },\n  { \"id\":40, \"name\": \"baseball_glove\" },\n  { \"id\":41, \"name\": \"skateboard\" },\n  { \"id\":42, \"name\": \"surfboard\" },\n  { \"id\":43, \"name\": \"tennis_racket\" },\n  { \"id\":44, \"name\": \"bottle\" },\n  { \"id\":46, \"name\": \"wine_glass\" },\n  { \"id\":47, \"name\": \"cup\" },\n  { \"id\":48, \"name\": \"fork\" },\n  { \"id\":49, \"name\": \"knife\" },\n  { \"id\":50, \"name\": \"spoon\" },\n  { \"id\":51, \"name\": \"bowl\" },\n  { \"id\":52, \"name\": \"banana\" },\n  { \"id\":53, \"name\": \"apple\" },\n  { \"id\":54, \"name\": \"sandwich\" },\n  { \"id\":55, \"name\": \"orange\" },\n  { \"id\":56, \"name\": \"broccoli\" },\n  { \"id\":57, \"name\": \"carrot\" },\n  { \"id\":58, \"name\": \"hot_dog\" },\n  { \"id\":59, \"name\": \"pizza\" },\n  { \"id\":60, \"name\": \"donut\" },\n  { \"id\":61, \"name\": \"cake\" },\n  { \"id\":62, \"name\": \"chair\" },\n  { \"id\":63, \"name\": \"couch\" },\n  { \"id\":64, \"name\": \"potted_plant\" },\n  { \"id\":65, \"name\": \"bed\" },\n  { \"id\":67, \"name\": \"dining_table\" },\n  { \"id\":70, \"name\": \"toilet\" },\n  { \"id\":72, \"name\": \"tv\" },\n  { \"id\":73, \"name\": \"laptop\" },\n  { \"id\":74, \"name\": \"mouse\" },\n  { \"id\":75, \"name\": \"remote\" },\n  { \"id\":76, \"name\": \"keyboard\" },\n  { \"id\":77, \"name\": \"cell_phone\" },\n  { \"id\":78, \"name\": \"microwave\" },\n  { \"id\":79, \"name\": \"oven\" },\n  { \"id\":80, \"name\": \"toaster\" },\n  { \"id\":81, \"name\": \"sink\" },\n  { \"id\":83, \"name\": \"refrigerator\" },\n  { \"id\":84, \"name\": \"book\" },\n  { \"id\":85, \"name\": \"clock\" },\n  { \"id\":86, \"name\": \"vase\" },\n  { \"id\":87, \"name\": \"scissors\" },\n  { \"id\":88, \"name\": \"teddy_bear\" },\n  { \"id\":89, \"name\": \"hair_drier\" },\n  { \"id\":90, \"name\": \"toothbrush\" }\n]\n","type":"detector"}},"spec":{"description":"RetinaNet R101 from Detectron2","handler":"main:handler","runtime":"python:3.8","resources":{},"image":"cvat/pth.facebookresearch.detectron2.retinanet_r101:latest","targetCPU":75,"triggers":{"myHttpTrigger":{"class":"","kind":"http","name":"myHttpTrigger","maxWorkers":2,"workerAvailabilityTimeoutMilliseconds":10000,"attributes":{"maxRequestBodySize":33554432}}},"volumes":[{"volume":{"name":"volume-1","hostPath":{"path":"/home/nmanovic/Workspace/cvat/serverless/common"}},"volumeMount":{"name":"volume-1","mountPath":"/opt/nuclio/common"}}],"build":{"image":"cvat/pth.facebookresearch.detectron2.retinanet_r101","baseImage":"ubuntu:20.04","directives":{"preCopy":[{"kind":"ENV","value":"DEBIAN_FRONTEND=noninteractive"},{"kind":"RUN","value":"apt-get update \u0026\u0026 apt-get -y install curl git python3 python3-pip"},{"kind":"WORKDIR","value":"/opt/nuclio"},{"kind":"RUN","value":"pip3 install torch==1.8.1+cpu torchvision==0.9.1+cpu torchaudio==0.8.1 -f https://download.pytorch.org/whl/torch_stable.html"},{"kind":"RUN","value":"pip3 install 'git+https://github.com/facebookresearch/detectron2@v0.4'"},{"kind":"RUN","value":"curl -O https://dl.fbaipublicfiles.com/detectron2/COCO-Detection/retinanet_R_101_FPN_3x/190397697/model_final_971ab9.pkl"},{"kind":"RUN","value":"ln -s /usr/bin/pip3 /usr/local/bin/pip"}]},"codeEntryType":"image"},"platform":{"attributes":{"mountMode":"volume","restartPolicy":{"maximumRetryCount":3,"name":"always"}}},"readinessTimeoutSeconds":60,"securityContext":{},"eventTimeout":"30s"}}}}
 21.07.21 15:20:39.042            nuctl.platform (I) Waiting for function to be ready {"timeout": 60}
-21.07.21 15:20:40.480                     nuctl (I) Function deploy complete {"functionName": "pth.facebookresearch.detectron2.retinanet_r101", "httpPort": 49153}
+21.07.21 15:20:40.480                     nuctl (I) Function deploy complete {"functionName": "pth-facebookresearch-detectron2-retinanet-r101", "httpPort": 49153}
 ```
 
 </details>
@@ -671,8 +680,8 @@ After these changes deploy the serverless function once again. For
 `serverless/pytorch/facebookresearch/detectron2/retinanet/nuclio/` you should
 run the command below:
 
-```console
-$ serverless/deploy_cpu.sh serverless/pytorch/facebookresearch/detectron2/retinanet
+```bash
+serverless/deploy_cpu.sh serverless/pytorch/facebookresearch/detectron2/retinanet
 ```
 
 To debug python code inside a container you have to publish the port (in this
@@ -689,15 +698,15 @@ IP address of your host (usually IP address starts from `192.168.`). You will
 need to confirm that you want to connect to your host computer and enter your
 password. Keep the terminal open after that.
 
-```console
-$ docker exec -it nuclio-nuclio-pth.facebookresearch.detectron2.retinanet_r101 /bin/bash
-$ apt update && apt install -y ssh
-$ ssh -R 5678:localhost:5678 user@ipaddress
+```bash
+docker exec -it nuclio-nuclio-pth-facebookresearch-detectron2-retinanet-r101 /bin/bash
+apt update && apt install -y ssh
+ssh -R 5678:localhost:5678 user@ipaddress
 ```
 
 See how the latest command looks like in my case:
 
-```console
+```
 root@2d6cceec8f70:/opt/nuclio# ssh -R 5678:localhost:5678 nmanovic@192.168.50.188
 The authenticity of host '192.168.50.188 (192.168.50.188)' can't be established.
 ECDSA key fingerprint is SHA256:0sD6IWi+FKAhtUXr2TroHqyjcnYRIGLLx/wkGaZeRuo.
@@ -754,16 +763,20 @@ First of all need to check that you are using the recommended version of
 Nuclio framework. In my case it is `1.5.16` but you need to check [the
 installation manual][cvat-auto-annotation-guide].
 
-```console
-$ nuctl version
+```bash
+nuctl version
+```
+```
 Client version:
 "Label: 1.5.16, Git commit: ae43a6a560c2bec42d7ccfdf6e8e11a1e3cc3774, OS: linux, Arch: amd64, Go version: go1.14.3"
 ```
 
 Check that Nuclio dashboard is running and its version corresponds to `nuctl`.
 
-```console
-$ docker ps --filter NAME=^nuclio$
+```bash
+docker ps --filter NAME=^nuclio$
+```
+```
 CONTAINER ID   IMAGE                                   COMMAND                  CREATED       STATUS                    PORTS                                               NAMES
 7ab0c076c927   quay.io/nuclio/dashboard:1.5.16-amd64   "/docker-entrypoint.…"   6 weeks ago   Up 46 minutes (healthy)   80/tcp, 0.0.0.0:8070->8070/tcp, :::8070->8070/tcp   nuclio
 ```
@@ -771,25 +784,27 @@ CONTAINER ID   IMAGE                                   COMMAND                  
 Be sure that the model, which doesn't work, is healthy. In my case Inside Outside
 Guidance is not running.
 
-```console
-$ docker ps --filter NAME=iog
+```bash
+docker ps --filter NAME=iog
+```
+```
 CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
 ```
 
 Let's run it. Go to the root of CVAT repository and run the deploying command.
 
-```console
-$ serverless/deploy_cpu.sh serverless/pytorch/shiyinzhang/iog
+```bash
+serverless/deploy_cpu.sh serverless/pytorch/shiyinzhang/iog
 ```
 
 <details>
 
-```console
+```
 Deploying serverless/pytorch/shiyinzhang/iog function...
 21.07.06 12:49:08.763                     nuctl (I) Deploying function {"name": ""}
 21.07.06 12:49:08.763                     nuctl (I) Building {"versionInfo": "Label: 1.5.16, Git commit: ae43a6a560c2bec42d7ccfdf6e8e11a1e3cc3774, OS: linux, Arch: amd64, Go version: go1.14.3", "name": ""}
-21.07.06 12:49:09.085                     nuctl (I) Cleaning up before deployment {"functionName": "pth.shiyinzhang.iog"}
-21.07.06 12:49:09.162                     nuctl (I) Function already exists, deleting function containers {"functionName": "pth.shiyinzhang.iog"}
+21.07.06 12:49:09.085                     nuctl (I) Cleaning up before deployment {"functionName": "pth-shiyinzhang-iog"}
+21.07.06 12:49:09.162                     nuctl (I) Function already exists, deleting function containers {"functionName": "pth-shiyinzhang-iog"}
 21.07.06 12:49:09.230                     nuctl (I) Staging files and preparing base images
 21.07.06 12:49:09.232                     nuctl (I) Building processor image {"imageName": "cvat/pth.shiyinzhang.iog:latest"}
 21.07.06 12:49:09.232     nuctl.platform.docker (I) Pulling image {"imageName": "quay.io/nuclio/handler-builder-python-onbuild:1.5.16-amd64"}
@@ -797,9 +812,9 @@ Deploying serverless/pytorch/shiyinzhang/iog function...
 21.07.06 12:49:16.222            nuctl.platform (I) Building docker image {"image": "cvat/pth.shiyinzhang.iog:latest"}
 21.07.06 12:49:16.555            nuctl.platform (I) Pushing docker image into registry {"image": "cvat/pth.shiyinzhang.iog:latest", "registry": ""}
 21.07.06 12:49:16.555            nuctl.platform (I) Docker image was successfully built and pushed into docker registry {"image": "cvat/pth.shiyinzhang.iog:latest"}
-21.07.06 12:49:16.555                     nuctl (I) Build complete {"result": {"Image":"cvat/pth.shiyinzhang.iog:latest","UpdatedFunctionConfig":{"metadata":{"name":"pth.shiyinzhang.iog","namespace":"nuclio","labels":{"nuclio.io/project-name":"cvat"},"annotations":{"framework":"pytorch","min_pos_points":"1","name":"IOG","spec":"","startswith_box":"true","type":"interactor"}},"spec":{"description":"Interactive Object Segmentation with Inside-Outside Guidance","handler":"main:handler","runtime":"python:3.6","env":[{"name":"PYTHONPATH","value":"/opt/nuclio/iog"}],"resources":{},"image":"cvat/pth.shiyinzhang.iog:latest","targetCPU":75,"triggers":{"myHttpTrigger":{"class":"","kind":"http","name":"myHttpTrigger","maxWorkers":2,"workerAvailabilityTimeoutMilliseconds":10000,"attributes":{"maxRequestBodySize":33554432}}},"volumes":[{"volume":{"name":"volume-1","hostPath":{"path":"/home/nmanovic/Workspace/cvat/serverless/common"}},"volumeMount":{"name":"volume-1","mountPath":"/opt/nuclio/common"}}],"build":{"image":"cvat/pth.shiyinzhang.iog","baseImage":"continuumio/miniconda3","directives":{"preCopy":[{"kind":"WORKDIR","value":"/opt/nuclio"},{"kind":"RUN","value":"conda create -y -n iog python=3.6"},{"kind":"SHELL","value":"[\"conda\", \"run\", \"-n\", \"iog\", \"/bin/bash\", \"-c\"]"},{"kind":"RUN","value":"conda install -y -c anaconda curl"},{"kind":"RUN","value":"conda install -y pytorch=0.4 torchvision=0.2 -c pytorch"},{"kind":"RUN","value":"conda install -y -c conda-forge pycocotools opencv scipy"},{"kind":"RUN","value":"git clone https://github.com/shiyinzhang/Inside-Outside-Guidance.git iog"},{"kind":"WORKDIR","value":"/opt/nuclio/iog"},{"kind":"ENV","value":"fileid=1Lm1hhMhhjjnNwO4Pf7SC6tXLayH2iH0l"},{"kind":"ENV","value":"filename=IOG_PASCAL_SBD.pth"},{"kind":"RUN","value":"curl -c ./cookie -s -L \"https://drive.google.com/uc?export=download\u0026id=${fileid}\""},{"kind":"RUN","value":"echo \"/download/ {print \\$NF}\" \u003e confirm_code.awk"},{"kind":"RUN","value":"curl -Lb ./cookie \"https://drive.google.com/uc?export=download\u0026confirm=`awk -f confirm_code.awk ./cookie`\u0026id=${fileid}\" -o ${filename}"},{"kind":"WORKDIR","value":"/opt/nuclio"},{"kind":"ENTRYPOINT","value":"[\"conda\", \"run\", \"-n\", \"iog\"]"}]},"codeEntryType":"image"},"platform":{"attributes":{"mountMode":"volume","restartPolicy":{"maximumRetryCount":3,"name":"always"}}},"readinessTimeoutSeconds":60,"securityContext":{},"eventTimeout":"30s"}}}}
-21.07.06 12:49:17.422     nuctl.platform.docker (W) Failed to run container {"err": "stdout:\n1373cb432a178a3606685b5975e40a0755bc7958786c182304f5d1bbc0873ceb\ndocker: Error response from daemon: driver failed programming external connectivity on endpoint nuclio-nuclio-pth.shiyinzhang.iog (df68e7b4a60e553ee3079f1f1622b050cc958bd50f2cd359a20164d8a417d0ea): Bind for 0.0.0.0:49154 failed: port is already allocated.\n\nstderr:\n", "errVerbose": "\nError - exit status 125\n    /nuclio/pkg/cmdrunner/shellrunner.go:96\n\nCall stack:\nstdout:\n1373cb432a178a3606685b5975e40a0755bc7958786c182304f5d1bbc0873ceb\ndocker: Error response from daemon: driver failed programming external connectivity on endpoint nuclio-nuclio-pth.shiyinzhang.iog (df68e7b4a60e553ee3079f1f1622b050cc958bd50f2cd359a20164d8a417d0ea): Bind for 0.0.0.0:49154 failed: port is already allocated.\n\nstderr:\n\n    /nuclio/pkg/cmdrunner/shellrunner.go:96\nstdout:\n1373cb432a178a3606685b5975e40a0755bc7958786c182304f5d1bbc0873ceb\ndocker: Error response from daemon: driver failed programming external connectivity on endpoint nuclio-nuclio-pth.shiyinzhang.iog (df68e7b4a60e553ee3079f1f1622b050cc958bd50f2cd359a20164d8a417d0ea): Bind for 0.0.0.0:49154 failed: port is already allocated.\n\nstderr:\n", "errCauses": [{"error": "exit status 125"}], "stdout": "1373cb432a178a3606685b5975e40a0755bc7958786c182304f5d1bbc0873ceb\ndocker: Error response from daemon: driver failed programming external connectivity on endpoint nuclio-nuclio-pth.shiyinzhang.iog (df68e7b4a60e553ee3079f1f1622b050cc958bd50f2cd359a20164d8a417d0ea): Bind for 0.0.0.0:49154 failed: port is already allocated.\n", "stderr": ""}
-21.07.06 12:49:17.422                     nuctl (W) Failed to create a function; setting the function status {"err": "Failed to run a Docker container", "errVerbose": "\nError - exit status 125\n    /nuclio/pkg/cmdrunner/shellrunner.go:96\n\nCall stack:\nstdout:\n1373cb432a178a3606685b5975e40a0755bc7958786c182304f5d1bbc0873ceb\ndocker: Error response from daemon: driver failed programming external connectivity on endpoint nuclio-nuclio-pth.shiyinzhang.iog (df68e7b4a60e553ee3079f1f1622b050cc958bd50f2cd359a20164d8a417d0ea): Bind for 0.0.0.0:49154 failed: port is already allocated.\n\nstderr:\n\n    /nuclio/pkg/cmdrunner/shellrunner.go:96\nFailed to run a Docker container\n    /nuclio/pkg/platform/local/platform.go:653\nFailed to run a Docker container", "errCauses": [{"error": "stdout:\n1373cb432a178a3606685b5975e40a0755bc7958786c182304f5d1bbc0873ceb\ndocker: Error response from daemon: driver failed programming external connectivity on endpoint nuclio-nuclio-pth.shiyinzhang.iog (df68e7b4a60e553ee3079f1f1622b050cc958bd50f2cd359a20164d8a417d0ea): Bind for 0.0.0.0:49154 failed: port is already allocated.\n\nstderr:\n", "errorVerbose": "\nError - exit status 125\n    /nuclio/pkg/cmdrunner/shellrunner.go:96\n\nCall stack:\nstdout:\n1373cb432a178a3606685b5975e40a0755bc7958786c182304f5d1bbc0873ceb\ndocker: Error response from daemon: driver failed programming external connectivity on endpoint nuclio-nuclio-pth.shiyinzhang.iog (df68e7b4a60e553ee3079f1f1622b050cc958bd50f2cd359a20164d8a417d0ea): Bind for 0.0.0.0:49154 failed: port is already allocated.\n\nstderr:\n\n    /nuclio/pkg/cmdrunner/shellrunner.go:96\nstdout:\n1373cb432a178a3606685b5975e40a0755bc7958786c182304f5d1bbc0873ceb\ndocker: Error response from daemon: driver failed programming external connectivity on endpoint nuclio-nuclio-pth.shiyinzhang.iog (df68e7b4a60e553ee3079f1f1622b050cc958bd50f2cd359a20164d8a417d0ea): Bind for 0.0.0.0:49154 failed: port is already allocated.\n\nstderr:\n", "errorCauses": [{"error": "exit status 125"}]}]}
+21.07.06 12:49:16.555                     nuctl (I) Build complete {"result": {"Image":"cvat/pth.shiyinzhang.iog:latest","UpdatedFunctionConfig":{"metadata":{"name":"pth-shiyinzhang-iog","namespace":"nuclio","labels":{"nuclio.io/project-name":"cvat"},"annotations":{"framework":"pytorch","min_pos_points":"1","name":"IOG","spec":"","startswith_box":"true","type":"interactor"}},"spec":{"description":"Interactive Object Segmentation with Inside-Outside Guidance","handler":"main:handler","runtime":"python:3.6","env":[{"name":"PYTHONPATH","value":"/opt/nuclio/iog"}],"resources":{},"image":"cvat/pth.shiyinzhang.iog:latest","targetCPU":75,"triggers":{"myHttpTrigger":{"class":"","kind":"http","name":"myHttpTrigger","maxWorkers":2,"workerAvailabilityTimeoutMilliseconds":10000,"attributes":{"maxRequestBodySize":33554432}}},"volumes":[{"volume":{"name":"volume-1","hostPath":{"path":"/home/nmanovic/Workspace/cvat/serverless/common"}},"volumeMount":{"name":"volume-1","mountPath":"/opt/nuclio/common"}}],"build":{"image":"cvat/pth.shiyinzhang.iog","baseImage":"continuumio/miniconda3","directives":{"preCopy":[{"kind":"WORKDIR","value":"/opt/nuclio"},{"kind":"RUN","value":"conda create -y -n iog python=3.6"},{"kind":"SHELL","value":"[\"conda\", \"run\", \"-n\", \"iog\", \"/bin/bash\", \"-c\"]"},{"kind":"RUN","value":"conda install -y -c anaconda curl"},{"kind":"RUN","value":"conda install -y pytorch=0.4 torchvision=0.2 -c pytorch"},{"kind":"RUN","value":"conda install -y -c conda-forge pycocotools opencv scipy"},{"kind":"RUN","value":"git clone https://github.com/shiyinzhang/Inside-Outside-Guidance.git iog"},{"kind":"WORKDIR","value":"/opt/nuclio/iog"},{"kind":"ENV","value":"fileid=1Lm1hhMhhjjnNwO4Pf7SC6tXLayH2iH0l"},{"kind":"ENV","value":"filename=IOG_PASCAL_SBD.pth"},{"kind":"RUN","value":"curl -c ./cookie -s -L \"https://drive.google.com/uc?export=download\u0026id=${fileid}\""},{"kind":"RUN","value":"echo \"/download/ {print \\$NF}\" \u003e confirm_code.awk"},{"kind":"RUN","value":"curl -Lb ./cookie \"https://drive.google.com/uc?export=download\u0026confirm=`awk -f confirm_code.awk ./cookie`\u0026id=${fileid}\" -o ${filename}"},{"kind":"WORKDIR","value":"/opt/nuclio"},{"kind":"ENTRYPOINT","value":"[\"conda\", \"run\", \"-n\", \"iog\"]"}]},"codeEntryType":"image"},"platform":{"attributes":{"mountMode":"volume","restartPolicy":{"maximumRetryCount":3,"name":"always"}}},"readinessTimeoutSeconds":60,"securityContext":{},"eventTimeout":"30s"}}}}
+21.07.06 12:49:17.422     nuctl.platform.docker (W) Failed to run container {"err": "stdout:\n1373cb432a178a3606685b5975e40a0755bc7958786c182304f5d1bbc0873ceb\ndocker: Error response from daemon: driver failed programming external connectivity on endpoint nuclio-nuclio-pth-shiyinzhang-iog (df68e7b4a60e553ee3079f1f1622b050cc958bd50f2cd359a20164d8a417d0ea): Bind for 0.0.0.0:49154 failed: port is already allocated.\n\nstderr:\n", "errVerbose": "\nError - exit status 125\n    /nuclio/pkg/cmdrunner/shellrunner.go:96\n\nCall stack:\nstdout:\n1373cb432a178a3606685b5975e40a0755bc7958786c182304f5d1bbc0873ceb\ndocker: Error response from daemon: driver failed programming external connectivity on endpoint nuclio-nuclio-pth-shiyinzhang-iog (df68e7b4a60e553ee3079f1f1622b050cc958bd50f2cd359a20164d8a417d0ea): Bind for 0.0.0.0:49154 failed: port is already allocated.\n\nstderr:\n\n    /nuclio/pkg/cmdrunner/shellrunner.go:96\nstdout:\n1373cb432a178a3606685b5975e40a0755bc7958786c182304f5d1bbc0873ceb\ndocker: Error response from daemon: driver failed programming external connectivity on endpoint nuclio-nuclio-pth-shiyinzhang-iog (df68e7b4a60e553ee3079f1f1622b050cc958bd50f2cd359a20164d8a417d0ea): Bind for 0.0.0.0:49154 failed: port is already allocated.\n\nstderr:\n", "errCauses": [{"error": "exit status 125"}], "stdout": "1373cb432a178a3606685b5975e40a0755bc7958786c182304f5d1bbc0873ceb\ndocker: Error response from daemon: driver failed programming external connectivity on endpoint nuclio-nuclio-pth-shiyinzhang-iog (df68e7b4a60e553ee3079f1f1622b050cc958bd50f2cd359a20164d8a417d0ea): Bind for 0.0.0.0:49154 failed: port is already allocated.\n", "stderr": ""}
+21.07.06 12:49:17.422                     nuctl (W) Failed to create a function; setting the function status {"err": "Failed to run a Docker container", "errVerbose": "\nError - exit status 125\n    /nuclio/pkg/cmdrunner/shellrunner.go:96\n\nCall stack:\nstdout:\n1373cb432a178a3606685b5975e40a0755bc7958786c182304f5d1bbc0873ceb\ndocker: Error response from daemon: driver failed programming external connectivity on endpoint nuclio-nuclio-pth-shiyinzhang-iog (df68e7b4a60e553ee3079f1f1622b050cc958bd50f2cd359a20164d8a417d0ea): Bind for 0.0.0.0:49154 failed: port is already allocated.\n\nstderr:\n\n    /nuclio/pkg/cmdrunner/shellrunner.go:96\nFailed to run a Docker container\n    /nuclio/pkg/platform/local/platform.go:653\nFailed to run a Docker container", "errCauses": [{"error": "stdout:\n1373cb432a178a3606685b5975e40a0755bc7958786c182304f5d1bbc0873ceb\ndocker: Error response from daemon: driver failed programming external connectivity on endpoint nuclio-nuclio-pth-shiyinzhang-iog (df68e7b4a60e553ee3079f1f1622b050cc958bd50f2cd359a20164d8a417d0ea): Bind for 0.0.0.0:49154 failed: port is already allocated.\n\nstderr:\n", "errorVerbose": "\nError - exit status 125\n    /nuclio/pkg/cmdrunner/shellrunner.go:96\n\nCall stack:\nstdout:\n1373cb432a178a3606685b5975e40a0755bc7958786c182304f5d1bbc0873ceb\ndocker: Error response from daemon: driver failed programming external connectivity on endpoint nuclio-nuclio-pth-shiyinzhang-iog (df68e7b4a60e553ee3079f1f1622b050cc958bd50f2cd359a20164d8a417d0ea): Bind for 0.0.0.0:49154 failed: port is already allocated.\n\nstderr:\n\n    /nuclio/pkg/cmdrunner/shellrunner.go:96\nstdout:\n1373cb432a178a3606685b5975e40a0755bc7958786c182304f5d1bbc0873ceb\ndocker: Error response from daemon: driver failed programming external connectivity on endpoint nuclio-nuclio-pth-shiyinzhang-iog (df68e7b4a60e553ee3079f1f1622b050cc958bd50f2cd359a20164d8a417d0ea): Bind for 0.0.0.0:49154 failed: port is already allocated.\n\nstderr:\n", "errorCauses": [{"error": "exit status 125"}]}]}
 
 Error - exit status 125
     /nuclio/pkg/cmdrunner/shellrunner.go:96
@@ -807,7 +822,7 @@ Error - exit status 125
 Call stack:
 stdout:
 1373cb432a178a3606685b5975e40a0755bc7958786c182304f5d1bbc0873ceb
-docker: Error response from daemon: driver failed programming external connectivity on endpoint nuclio-nuclio-pth.shiyinzhang.iog (df68e7b4a60e553ee3079f1f1622b050cc958bd50f2cd359a20164d8a417d0ea): Bind for 0.0.0.0:49154 failed: port is already allocated.
+docker: Error response from daemon: driver failed programming external connectivity on endpoint nuclio-nuclio-pth-shiyinzhang-iog (df68e7b4a60e553ee3079f1f1622b050cc958bd50f2cd359a20164d8a417d0ea): Bind for 0.0.0.0:49154 failed: port is already allocated.
 
 stderr:
 
@@ -819,8 +834,8 @@ Failed to deploy function
   NAMESPACE |                      NAME                      | PROJECT | STATE | NODE PORT | REPLICAS
   nuclio    | openvino-dextr                                 | cvat    | ready |     49154 | 1/1
   nuclio    | pth-foolwood-siammask                          | cvat    | ready |     49155 | 1/1
-  nuclio    | pth.facebookresearch.detectron2.retinanet_r101 | cvat    | ready |     49155 | 1/1
-  nuclio    | pth.shiyinzhang.iog                            | cvat    | error |         0 | 1/1
+  nuclio    | pth-facebookresearch-detectron2-retinanet-r101 | cvat    | ready |     49155 | 1/1
+  nuclio    | pth-shiyinzhang-iog                            | cvat    | error |         0 | 1/1
 ```
 
 </details>
@@ -830,11 +845,17 @@ assigned by Nuclio. Now the port is used by `openvino-dextr` as we can
 see in logs. To prove our hypothesis just need to run a couple of docker
 commands:
 
-```console
-$ docker container ls -a | grep iog
-eb0c1ee46630   cvat/pth.shiyinzhang.iog:latest                              "conda run -n iog pr…"   9 minutes ago       Created                                                                          nuclio-nuclio-pth.shiyinzhang.iog
-$ docker inspect eb0c1ee46630 | grep 49154
-            "Error": "driver failed programming external connectivity on endpoint nuclio-nuclio-pth.shiyinzhang.iog (02384290f91b2216162b1603322dadee426afe7f439d3d090f598af5d4863b2d): Bind for 0.0.0.0:49154 failed: port is already allocated",
+```bash
+docker container ls -a | grep iog
+```
+```
+eb0c1ee46630   cvat/pth.shiyinzhang.iog:latest                              "conda run -n iog pr…"   9 minutes ago       Created                                                                          nuclio-nuclio-pth-shiyinzhang-iog
+```
+```bash
+docker inspect eb0c1ee46630 | grep 49154
+```
+```
+            "Error": "driver failed programming external connectivity on endpoint nuclio-nuclio-pth-shiyinzhang-iog (02384290f91b2216162b1603322dadee426afe7f439d3d090f598af5d4863b2d): Bind for 0.0.0.0:49154 failed: port is already allocated",
                         "HostPort": "49154"
 ```
 
@@ -842,19 +863,23 @@ To solve the problem let's just remove the previous container for the function.
 In this case it is `eb0c1ee46630`. After that the deploying command works as
 expected.
 
-```console
-$ docker container rm eb0c1ee46630
+```bash
+docker container rm eb0c1ee46630
+```
+```
 eb0c1ee46630
-$ serverless/deploy_cpu.sh serverless/pytorch/shiyinzhang/iog
+```
+```bash
+serverless/deploy_cpu.sh serverless/pytorch/shiyinzhang/iog
 ```
 
 <details>
 
-```console
+```
 Deploying serverless/pytorch/shiyinzhang/iog function...
 21.07.06 13:09:52.934                     nuctl (I) Deploying function {"name": ""}
 21.07.06 13:09:52.934                     nuctl (I) Building {"versionInfo": "Label: 1.5.16, Git commit: ae43a6a560c2bec42d7ccfdf6e8e11a1e3cc3774, OS: linux, Arch: amd64, Go version: go1.14.3", "name": ""}
-21.07.06 13:09:53.282                     nuctl (I) Cleaning up before deployment {"functionName": "pth.shiyinzhang.iog"}
+21.07.06 13:09:53.282                     nuctl (I) Cleaning up before deployment {"functionName": "pth-shiyinzhang-iog"}
 21.07.06 13:09:53.341                     nuctl (I) Staging files and preparing base images
 21.07.06 13:09:53.342                     nuctl (I) Building processor image {"imageName": "cvat/pth.shiyinzhang.iog:latest"}
 21.07.06 13:09:53.342     nuctl.platform.docker (I) Pulling image {"imageName": "quay.io/nuclio/handler-builder-python-onbuild:1.5.16-amd64"}
@@ -862,15 +887,15 @@ Deploying serverless/pytorch/shiyinzhang/iog function...
 21.07.06 13:10:00.163            nuctl.platform (I) Building docker image {"image": "cvat/pth.shiyinzhang.iog:latest"}
 21.07.06 13:10:00.452            nuctl.platform (I) Pushing docker image into registry {"image": "cvat/pth.shiyinzhang.iog:latest", "registry": ""}
 21.07.06 13:10:00.452            nuctl.platform (I) Docker image was successfully built and pushed into docker registry {"image": "cvat/pth.shiyinzhang.iog:latest"}
-21.07.06 13:10:00.452                     nuctl (I) Build complete {"result": {"Image":"cvat/pth.shiyinzhang.iog:latest","UpdatedFunctionConfig":{"metadata":{"name":"pth.shiyinzhang.iog","namespace":"nuclio","labels":{"nuclio.io/project-name":"cvat"},"annotations":{"framework":"pytorch","min_pos_points":"1","name":"IOG","spec":"","startswith_box":"true","type":"interactor"}},"spec":{"description":"Interactive Object Segmentation with Inside-Outside Guidance","handler":"main:handler","runtime":"python:3.6","env":[{"name":"PYTHONPATH","value":"/opt/nuclio/iog"}],"resources":{},"image":"cvat/pth.shiyinzhang.iog:latest","targetCPU":75,"triggers":{"myHttpTrigger":{"class":"","kind":"http","name":"myHttpTrigger","maxWorkers":2,"workerAvailabilityTimeoutMilliseconds":10000,"attributes":{"maxRequestBodySize":33554432}}},"volumes":[{"volume":{"name":"volume-1","hostPath":{"path":"/home/nmanovic/Workspace/cvat/serverless/common"}},"volumeMount":{"name":"volume-1","mountPath":"/opt/nuclio/common"}}],"build":{"image":"cvat/pth.shiyinzhang.iog","baseImage":"continuumio/miniconda3","directives":{"preCopy":[{"kind":"WORKDIR","value":"/opt/nuclio"},{"kind":"RUN","value":"conda create -y -n iog python=3.6"},{"kind":"SHELL","value":"[\"conda\", \"run\", \"-n\", \"iog\", \"/bin/bash\", \"-c\"]"},{"kind":"RUN","value":"conda install -y -c anaconda curl"},{"kind":"RUN","value":"conda install -y pytorch=0.4 torchvision=0.2 -c pytorch"},{"kind":"RUN","value":"conda install -y -c conda-forge pycocotools opencv scipy"},{"kind":"RUN","value":"git clone https://github.com/shiyinzhang/Inside-Outside-Guidance.git iog"},{"kind":"WORKDIR","value":"/opt/nuclio/iog"},{"kind":"ENV","value":"fileid=1Lm1hhMhhjjnNwO4Pf7SC6tXLayH2iH0l"},{"kind":"ENV","value":"filename=IOG_PASCAL_SBD.pth"},{"kind":"RUN","value":"curl -c ./cookie -s -L \"https://drive.google.com/uc?export=download\u0026id=${fileid}\""},{"kind":"RUN","value":"echo \"/download/ {print \\$NF}\" \u003e confirm_code.awk"},{"kind":"RUN","value":"curl -Lb ./cookie \"https://drive.google.com/uc?export=download\u0026confirm=`awk -f confirm_code.awk ./cookie`\u0026id=${fileid}\" -o ${filename}"},{"kind":"WORKDIR","value":"/opt/nuclio"},{"kind":"ENTRYPOINT","value":"[\"conda\", \"run\", \"-n\", \"iog\"]"}]},"codeEntryType":"image"},"platform":{"attributes":{"mountMode":"volume","restartPolicy":{"maximumRetryCount":3,"name":"always"}}},"readinessTimeoutSeconds":60,"securityContext":{},"eventTimeout":"30s"}}}}
+21.07.06 13:10:00.452                     nuctl (I) Build complete {"result": {"Image":"cvat/pth.shiyinzhang.iog:latest","UpdatedFunctionConfig":{"metadata":{"name":"pth-shiyinzhang-iog","namespace":"nuclio","labels":{"nuclio.io/project-name":"cvat"},"annotations":{"framework":"pytorch","min_pos_points":"1","name":"IOG","spec":"","startswith_box":"true","type":"interactor"}},"spec":{"description":"Interactive Object Segmentation with Inside-Outside Guidance","handler":"main:handler","runtime":"python:3.6","env":[{"name":"PYTHONPATH","value":"/opt/nuclio/iog"}],"resources":{},"image":"cvat/pth.shiyinzhang.iog:latest","targetCPU":75,"triggers":{"myHttpTrigger":{"class":"","kind":"http","name":"myHttpTrigger","maxWorkers":2,"workerAvailabilityTimeoutMilliseconds":10000,"attributes":{"maxRequestBodySize":33554432}}},"volumes":[{"volume":{"name":"volume-1","hostPath":{"path":"/home/nmanovic/Workspace/cvat/serverless/common"}},"volumeMount":{"name":"volume-1","mountPath":"/opt/nuclio/common"}}],"build":{"image":"cvat/pth.shiyinzhang.iog","baseImage":"continuumio/miniconda3","directives":{"preCopy":[{"kind":"WORKDIR","value":"/opt/nuclio"},{"kind":"RUN","value":"conda create -y -n iog python=3.6"},{"kind":"SHELL","value":"[\"conda\", \"run\", \"-n\", \"iog\", \"/bin/bash\", \"-c\"]"},{"kind":"RUN","value":"conda install -y -c anaconda curl"},{"kind":"RUN","value":"conda install -y pytorch=0.4 torchvision=0.2 -c pytorch"},{"kind":"RUN","value":"conda install -y -c conda-forge pycocotools opencv scipy"},{"kind":"RUN","value":"git clone https://github.com/shiyinzhang/Inside-Outside-Guidance.git iog"},{"kind":"WORKDIR","value":"/opt/nuclio/iog"},{"kind":"ENV","value":"fileid=1Lm1hhMhhjjnNwO4Pf7SC6tXLayH2iH0l"},{"kind":"ENV","value":"filename=IOG_PASCAL_SBD.pth"},{"kind":"RUN","value":"curl -c ./cookie -s -L \"https://drive.google.com/uc?export=download\u0026id=${fileid}\""},{"kind":"RUN","value":"echo \"/download/ {print \\$NF}\" \u003e confirm_code.awk"},{"kind":"RUN","value":"curl -Lb ./cookie \"https://drive.google.com/uc?export=download\u0026confirm=`awk -f confirm_code.awk ./cookie`\u0026id=${fileid}\" -o ${filename}"},{"kind":"WORKDIR","value":"/opt/nuclio"},{"kind":"ENTRYPOINT","value":"[\"conda\", \"run\", \"-n\", \"iog\"]"}]},"codeEntryType":"image"},"platform":{"attributes":{"mountMode":"volume","restartPolicy":{"maximumRetryCount":3,"name":"always"}}},"readinessTimeoutSeconds":60,"securityContext":{},"eventTimeout":"30s"}}}}
 21.07.06 13:10:01.604            nuctl.platform (I) Waiting for function to be ready {"timeout": 60}
-21.07.06 13:10:02.976                     nuctl (I) Function deploy complete {"functionName": "pth.shiyinzhang.iog", "httpPort": 49159}
+21.07.06 13:10:02.976                     nuctl (I) Function deploy complete {"functionName": "pth-shiyinzhang-iog", "httpPort": 49159}
   NAMESPACE |                      NAME                      | PROJECT | STATE | NODE PORT | REPLICAS
   nuclio    | openvino-dextr                                 | cvat    | ready |     49154 | 1/1
   nuclio    | pth-foolwood-siammask                          | cvat    | ready |     49155 | 1/1
   nuclio    | pth-saic-vul-fbrs                              | cvat    | ready |     49156 | 1/1
-  nuclio    | pth.facebookresearch.detectron2.retinanet_r101 | cvat    | ready |     49155 | 1/1
-  nuclio    | pth.shiyinzhang.iog                            | cvat    | ready |     49159 | 1/1
+  nuclio    | pth-facebookresearch-detectron2-retinanet-r101 | cvat    | ready |     49155 | 1/1
+  nuclio    | pth-shiyinzhang-iog                            | cvat    | ready |     49159 | 1/1
 ```
 
 </details>
@@ -881,22 +906,66 @@ useful to look at logs. Just run a couple of commands like
 
 <details>
 
-```console
-$ docker logs cvat
+```bash
+docker logs cvat
+```
+```
 2021-07-06 13:44:54,699 DEBG 'runserver' stderr output:
-[Tue Jul 06 13:44:54.699431 2021] [wsgi:error] [pid 625:tid 140010969868032] [remote 172.28.0.3:40972] [2021-07-06 13:44:54,699] ERROR django.request: Internal Server Error: /api/v1/lambda/functions/pth.shiyinzhang.iog
+[Tue Jul 06 13:44:54.699431 2021] [wsgi:error] [pid 625:tid 140010969868032] [remote 172.28.0.3:40972] [2021-07-06 13:44:54,699] ERROR django.request: Internal Server Error: /api/lambda/functions/pth-shiyinzhang-iog
 
 2021-07-06 13:44:54,700 DEBG 'runserver' stderr output:
-[Tue Jul 06 13:44:54.699712 2021] [wsgi:error] [pid 625:tid 140010969868032] [remote 172.28.0.3:40972] ERROR - 2021-07-06 13:44:54,699 - log - Internal Server Error: /api/v1/lambda/functions/pth.shiyinzhang.iog
+[Tue Jul 06 13:44:54.699712 2021] [wsgi:error] [pid 625:tid 140010969868032] [remote 172.28.0.3:40972] ERROR - 2021-07-06 13:44:54,699 - log - Internal Server Error: /api/lambda/functions/pth-shiyinzhang-iog
 
-$ docker container ls --filter name=iog
+```
+```bash
+docker container ls --filter name=iog
+```
+```
 CONTAINER ID   IMAGE                             COMMAND                  CREATED       STATUS                 PORTS                                         NAMES
-3b6ef9a9f3e2   cvat/pth.shiyinzhang.iog:latest   "conda run -n iog pr…"   4 hours ago   Up 4 hours (healthy)   0.0.0.0:49159->8080/tcp, :::49159->8080/tcp   nuclio-nuclio-pth.shiyinzhang.iog
+3b6ef9a9f3e2   cvat/pth.shiyinzhang.iog:latest   "conda run -n iog pr…"   4 hours ago   Up 4 hours (healthy)   0.0.0.0:49159->8080/tcp, :::49159->8080/tcp   nuclio-nuclio-pth-shiyinzhang-iog
 
-$ docker logs nuclio-nuclio-pth.shiyinzhang.iog
+```
+```bash
+docker logs nuclio-nuclio-pth-shiyinzhang-iog
 ```
 
 </details>
+
+If before model deployment you see that the `NODE PORT` is 0, you need to assign it manually.
+Add the `port: 32001` attribute to the `function.yaml` file of each model, before you deploy the model.
+Different ports should be prescribed for different models.
+
+```diff
+triggers:
+myHttpTrigger:
+    maxWorkers: 1
+    kind: 'http'
+    workerAvailabilityTimeoutMilliseconds: 10000
+    attributes:
++     port: 32001
+      maxRequestBodySize: 33554432 # 32MB
+```
+
+### Installation serverless functions on Windows 10 with using the Ubuntu subsystem
+
+If you encounter a problem running serverless functions on Windows 10,
+you can use the Ubuntu subsystem, for this do the following:
+
+1. Install  `WSL 2` and `Docker Desktop` as described in [installation manual][cvat-installation-guide-windows-10]
+
+1. Install [Ubuntu 18.04 from Microsoft store][ubuntu-1804-microsoft-store].
+
+1. Enable integration for Ubuntu-18.04 in the settings of `Docker Desktop` in the `Resources` `WSL integration` tab:
+
+   ![Docker WSL integration Ubuntu 18.04](/images/docker_wsl_integration.jpg)
+
+1. Then you can download and install `nuctl` on Ubuntu,
+   using the [automatic annotation guide][cvat-auto-annotation-guide].
+
+1. Install `git` and clone repository on Ubuntu,
+   as described in the [installation manual][cvat-installation-guide-ubuntu-1804].
+
+1. After that, run the commands from this tutorial through Ubuntu.
 
 [detectron2-github]: https://github.com/facebookresearch/detectron2
 [detectron2-requirements]: https://detectron2.readthedocs.io/en/latest/tutorials/install.html
@@ -904,21 +973,24 @@ $ docker logs nuclio-nuclio-pth.shiyinzhang.iog
 [opencv-python-github]: https://github.com/opencv/opencv-python
 [detectron2-tutorial]: https://detectron2.readthedocs.io/en/latest/tutorials/getting_started.html
 [retinanet-model-zoo]: https://github.com/facebookresearch/detectron2/blob/master/MODEL_ZOO.md#retinanet
-[faster-rcnn-function]: https://raw.githubusercontent.com/openvinotoolkit/cvat/38b774046d41d604ed85a521587e4bacce61b69c/serverless/tensorflow/faster_rcnn_inception_v2_coco/nuclio/function.yaml
+[faster-rcnn-function]: https://raw.githubusercontent.com/cvat-ai/cvat/38b774046d41d604ed85a521587e4bacce61b69c/serverless/tensorflow/faster_rcnn_inception_v2_coco/nuclio/function.yaml
 [nuclio-doc]: https://nuclio.io/docs/latest/reference/function-configuration/function-configuration-reference/
 [nuclio-http-trigger-doc]: https://nuclio.io/docs/latest/reference/triggers/http/
 [nuclio-bkms-doc]: https://nuclio.io/docs/latest/concepts/best-practices-and-common-pitfalls/
-[retinanet-function-yaml]: https://github.com/openvinotoolkit/cvat/blob/b2f616859ca64687c385e636b4a25014fbb9d17c/serverless/pytorch/facebookresearch/detectron2/retinanet/nuclio/function.yaml
-[retinanet-main-py]: https://github.com/openvinotoolkit/cvat/blob/b2f616859ca64687c385e636b4a25014fbb9d17c/serverless/pytorch/facebookresearch/detectron2/retinanet/nuclio/main.py
+[retinanet-function-yaml]: https://github.com/cvat-ai/cvat/blob/b2f616859ca64687c385e636b4a25014fbb9d17c/serverless/pytorch/facebookresearch/detectron2/retinanet/nuclio/function.yaml
+[retinanet-main-py]: https://github.com/cvat-ai/cvat/blob/b2f616859ca64687c385e636b4a25014fbb9d17c/serverless/pytorch/facebookresearch/detectron2/retinanet/nuclio/main.py
 [nuclio-homepage]: https://nuclio.io/
-[cvat-builtin-serverless]: https://github.com/openvinotoolkit/cvat/tree/develop/serverless
-[cvat-auto-annotation-guide]: https://openvinotoolkit.github.io/cvat/docs/administration/advanced/installation_automatic_annotation
+[cvat-builtin-serverless]: https://github.com/cvat-ai/cvat/tree/develop/serverless
+[cvat-auto-annotation-guide]: /docs/administration/advanced/installation_automatic_annotation
+[cvat-installation-guide-windows-10]: /docs/administration/basics/installation/#windows-10
+[cvat-installation-guide-ubuntu-1804]: /docs/administration/basics/installation/#ubuntu-1804-x86_64amd64
 [mscoco-format]: https://cocodataset.org/#format-data
 [pascal-voc-format]: http://host.robots.ox.ac.uk/pascal/VOC/voc2012/htmldoc/index.html
 [faas-wiki]: https://en.wikipedia.org/wiki/Function_as_a_service
-[cvat-ai-tools-user-guide]: https://openvinotoolkit.github.io/cvat/docs/manual/advanced/ai-tools/
-[cvat-github]: https://github.com/openvinotoolkit/cvat
-[siammask-serverless]: https://github.com/openvinotoolkit/cvat/tree/develop/serverless/pytorch/foolwood/siammask/nuclio
+[cvat-ai-tools-user-guide]: /docs/manual/advanced/ai-tools/
+[cvat-github]: https://github.com/cvat-ai/cvat
+[siammask-serverless]: https://github.com/cvat-ai/cvat/tree/develop/serverless/pytorch/foolwood/siammask/nuclio
 [vtest-avi]: https://github.com/opencv/opencv/blob/master/samples/data/vtest.avi?raw=true
 [intel-openvino-url]: https://software.intel.com/content/www/us/en/develop/tools/openvino-toolkit.html
-[cvat-auto-annotation-user-guide]: https://openvinotoolkit.github.io/cvat/docs/manual/advanced/automatic-annotation/
+[cvat-auto-annotation-user-guide]: /docs/manual/advanced/automatic-annotation/
+[ubuntu-1804-microsoft-store]: https://www.microsoft.com/en-us/p/ubuntu-1804-lts/9n9tngvndl3q

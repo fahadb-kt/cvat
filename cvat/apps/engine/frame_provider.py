@@ -1,20 +1,22 @@
-# Copyright (C) 2020 Intel Corporation
+# Copyright (C) 2020-2022 Intel Corporation
+# Copyright (C) 2022-2024 CVAT.ai Corporation
 #
 # SPDX-License-Identifier: MIT
 
 import math
 from enum import Enum
 from io import BytesIO
+import os
 
 import cv2
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageOps
 
-from cvat.apps.engine.cache import CacheInteraction
+from cvat.apps.engine.cache import MediaCache
 from cvat.apps.engine.media_extractors import VideoReader, ZipReader
 from cvat.apps.engine.mime_types import mimetypes
 from cvat.apps.engine.models import DataChoice, StorageMethodChoice, DimensionType
-
+from rest_framework.exceptions import ValidationError
 
 class RandomAccessIterator:
     def __init__(self, iterable):
@@ -40,7 +42,14 @@ class RandomAccessIterator:
         return v
 
     def reset(self):
+        self.close()
         self.iterator = iter(self.iterable)
+
+    def close(self):
+        if self.iterator is not None:
+            if close := getattr(self.iterator, 'close', None):
+                close()
+        self.iterator = None
         self.pos = -1
 
 class FrameProvider:
@@ -65,10 +74,18 @@ class FrameProvider:
 
         def load(self, chunk_id):
             if self.chunk_id != chunk_id:
+                self.unload()
+
                 self.chunk_id = chunk_id
                 self.chunk_reader = RandomAccessIterator(
                     self.reader_class([self.get_chunk_path(chunk_id)]))
             return self.chunk_reader
+
+        def unload(self):
+            self.chunk_id = None
+            if self.chunk_reader:
+                self.chunk_reader.close()
+                self.chunk_reader = None
 
     class BuffChunkLoader(ChunkLoader):
         def __init__(self, reader_class, path_getter, quality, db_data):
@@ -85,6 +102,7 @@ class FrameProvider:
 
     def __init__(self, db_data, dimension=DimensionType.DIM_2D):
         self._db_data = db_data
+        self._dimension = dimension
         self._loaders = {}
 
         reader_class = {
@@ -93,16 +111,16 @@ class FrameProvider:
         }
 
         if db_data.storage_method == StorageMethodChoice.CACHE:
-            cache = CacheInteraction(dimension=dimension)
+            cache = MediaCache(dimension=dimension)
 
             self._loaders[self.Quality.COMPRESSED] = self.BuffChunkLoader(
                 reader_class[db_data.compressed_chunk_type],
-                cache.get_buff_mime,
+                cache.get_task_chunk_data_with_mime,
                 self.Quality.COMPRESSED,
                 self._db_data)
             self._loaders[self.Quality.ORIGINAL] = self.BuffChunkLoader(
                 reader_class[db_data.original_chunk_type],
-                cache.get_buff_mime,
+                cache.get_task_chunk_data_with_mime,
                 self.Quality.ORIGINAL,
                 self._db_data)
         else:
@@ -116,20 +134,27 @@ class FrameProvider:
     def __len__(self):
         return self._db_data.size
 
+    def unload(self):
+        for loader in self._loaders.values():
+            loader.unload()
+
     def _validate_frame_number(self, frame_number):
         frame_number_ = int(frame_number)
         if frame_number_ < 0 or frame_number_ >= self._db_data.size:
-            raise Exception('Incorrect requested frame number: {}'.format(frame_number_))
+            raise ValidationError('Incorrect requested frame number: {}'.format(frame_number_))
 
         chunk_number = frame_number_ // self._db_data.chunk_size
         frame_offset = frame_number_ % self._db_data.chunk_size
 
         return frame_number_, chunk_number, frame_offset
 
+    def get_chunk_number(self, frame_number):
+        return int(frame_number) // self._db_data.chunk_size
+
     def _validate_chunk_number(self, chunk_number):
         chunk_number_ = int(chunk_number)
         if chunk_number_ < 0 or chunk_number_ >= math.ceil(self._db_data.size / self._db_data.chunk_size):
-            raise Exception('requested chunk does not exist')
+            raise ValidationError('requested chunk does not exist')
 
         return chunk_number_
 
@@ -139,7 +164,7 @@ class FrameProvider:
         image = av_frame.to_ndarray(format='bgr24')
         success, result = cv2.imencode(ext, image)
         if not success:
-            raise Exception("Failed to encode image to '%s' format" % (ext))
+            raise RuntimeError("Failed to encode image to '%s' format" % (ext))
         return BytesIO(result.tobytes())
 
     def _convert_frame(self, frame, reader_class, out_type):
@@ -156,10 +181,25 @@ class FrameProvider:
                     image[:, :, :3] = image[:, :, 2::-1] # RGB to BGR
             return image
         else:
-            raise Exception('unsupported output type')
+            raise RuntimeError('unsupported output type')
 
-    def get_preview(self):
-        return self._db_data.get_preview_path()
+    def get_preview(self, frame_number):
+        PREVIEW_SIZE = (256, 256)
+        PREVIEW_MIME = 'image/jpeg'
+
+        if self._dimension == DimensionType.DIM_3D:
+            # TODO
+            preview = Image.open(os.path.join(os.path.dirname(__file__), 'assets/3d_preview.jpeg'))
+        else:
+            preview, _ = self.get_frame(frame_number, self.Quality.COMPRESSED, self.Type.PIL)
+
+        preview = ImageOps.exif_transpose(preview)
+        preview.thumbnail(PREVIEW_SIZE)
+
+        output_buf = BytesIO()
+        preview.convert('RGB').save(output_buf, format="JPEG")
+
+        return output_buf, PREVIEW_MIME
 
     def get_chunk(self, chunk_number, quality=Quality.ORIGINAL):
         chunk_number = self._validate_chunk_number(chunk_number)
@@ -177,8 +217,12 @@ class FrameProvider:
         frame = self._convert_frame(frame, loader.reader_class, out_type)
         if loader.reader_class is VideoReader:
             return (frame, self.VIDEO_FRAME_MIME)
-        return (frame, mimetypes.guess_type(frame_name))
+        return (frame, mimetypes.guess_type(frame_name)[0])
 
-    def get_frames(self, quality=Quality.ORIGINAL, out_type=Type.BUFFER):
-        for idx in range(self._db_data.size):
+    def get_frames(self, start_frame, stop_frame, quality=Quality.ORIGINAL, out_type=Type.BUFFER):
+        for idx in range(start_frame, stop_frame):
             yield self.get_frame(idx, quality=quality, out_type=out_type)
+
+    @property
+    def data_id(self):
+        return self._db_data.id

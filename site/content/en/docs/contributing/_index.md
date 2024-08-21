@@ -1,10 +1,8 @@
 ---
 title: 'Contributing to this project'
 linkTitle: 'Contributing'
-weight: 4
-description: 'This section contains documents for CVAT developers'
-hide_feedback: true
-ul_show: false
+weight: 7
+description: 'This section contains documents for CVAT developers.'
 ---
 
 Please take a moment to review this document in order to make the contribution

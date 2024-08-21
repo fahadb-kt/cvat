@@ -1,54 +1,41 @@
-// Copyright (C) 2020 Intel Corporation
+// Copyright (C) 2020-2022 Intel Corporation
+// Copyright (C) 2023-2024 CVAT.ai Corporation
 //
 // SPDX-License-Identifier: MIT
 
-@import '../../../base.scss';
+@import 'base';
 
 .cvat-settings-tabs {
     height: 100%;
     overflow-y: auto;
-    padding-bottom: 15px;
+    padding-bottom: $grid-unit-size * 2;
 
     > div:nth-child(1) {
-        margin-top: 10px;
-        margin-bottom: 10px;
+        margin-top: $grid-unit-size;
+        margin-bottom: $grid-unit-size;
     }
 }
 
 .cvat-workspace-settings,
-.cvat-player-settings {
-    width: 100%;
+.cvat-player-settings,
+.cvat-organizations-settings {
+    width: calc(100% - 24px);
     height: max-content;
-    background: $background-color-1;
-    padding: 24px;
+    background: white;
+    padding-top: 24px;
+    padding-left: 24px;
 }
 
-.cvat-workspace-settings-auto-save,
-.cvat-workspace-settings-autoborders,
-.cvat-workspace-settings-intelligent-polygon-cropping,
-.cvat-workspace-settings-show-text-always,
-.cvat-workspace-settings-show-interpolated,
-.cvat-workspace-settings-approx-poly-threshold,
-.cvat-workspace-settings-aam-zoom-margin {
-    margin-bottom: 25px;
-
-    > div:first-child {
-        margin-bottom: 10px;
-    }
+.cvat-workspace-settings-text-content {
+    width: 100%;
 }
 
 .cvat-workspace-settings-approx-poly-threshold {
     user-select: none;
 }
 
-.cvat-player-settings-step,
-.cvat-player-settings-speed,
-.cvat-player-settings-reset-zoom,
-.cvat-player-settings-rotate-all,
-.cvat-player-settings-canvas-background,
-.cvat-workspace-settings-aam-zoom-margin,
-.cvat-workspace-settings-auto-save-interval {
-    margin-bottom: 25px;
+.cvat-player-setting {
+    margin-bottom: $grid-unit-size * 3;
 }
 
 .cvat-player-settings-step,
@@ -90,4 +77,15 @@
 
 .cvat-settings-modal .ant-modal-body {
     padding-top: 0;
+}
+
+.cvat-organizations-settings-list {
+    width: $grid-unit-size * 24;
+    margin-bottom: $grid-unit-size * 3;
+}
+
+.cvat-organizations-settings-list-item {
+    div {
+        width: 100%;
+    }
 }

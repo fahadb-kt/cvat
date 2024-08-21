@@ -1,7 +1,8 @@
 ---
 title: 'Attribute annotation mode (basics)'
 linkTitle: 'Attribute annotation mode'
-weight: 12
+weight: 20
+description: 'Usage examples and basic operations available in attribute annotation mode.'
 ---
 - In this mode you can edit attributes with fast navigation between objects and frames using a keyboard.
   Open the drop-down list in the top panel and select Attribute annotation Mode.
@@ -26,4 +27,5 @@ weight: 12
 - Use `Right Arrow`/`Left Arrow` keys to move to the previous/next image with annotation.
 
 To see all the hot keys available in the attribute annotation mode, press `F2`.
-Read more in the section [attribute annotation mode (advanced)](/docs/manual/advanced/attribute-annotation-mode-advanced/).
+Read more in the section
+{{< ilink "/docs/manual/advanced/attribute-annotation-mode-advanced" "attribute annotation mode (advanced)" >}}.

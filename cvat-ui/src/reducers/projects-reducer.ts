@@ -1,26 +1,37 @@
-// Copyright (C) 2020-2021 Intel Corporation
+// Copyright (C) 2020-2022 Intel Corporation
+// Copyright (C) 2022-2024 CVAT.ai Corporation
 //
 // SPDX-License-Identifier: MIT
 
 import { AnyAction } from 'redux';
+import { omit } from 'lodash';
+
 import { ProjectsActionTypes } from 'actions/projects-actions';
 import { BoundariesActionTypes } from 'actions/boundaries-actions';
 import { AuthActionTypes } from 'actions/auth-actions';
-
-import { Project, ProjectsState } from './interfaces';
+import { ProjectsState } from '.';
 
 const defaultState: ProjectsState = {
     initialized: false,
     fetching: false,
     count: 0,
     current: [],
+    previews: {},
     gettingQuery: {
         page: 1,
         id: null,
         search: null,
-        owner: null,
-        name: null,
-        status: null,
+        filter: null,
+        sort: null,
+    },
+    tasksGettingQuery: {
+        page: 1,
+        id: null,
+        search: null,
+        filter: null,
+        sort: null,
+        projectId: null,
+        ordering: 'subset',
     },
     activities: {
         deletes: {},
@@ -40,6 +51,10 @@ export default (state: ProjectsState = defaultState, action: AnyAction): Project
                     ...defaultState.gettingQuery,
                     ...action.payload.query,
                 },
+                tasksGettingQuery: {
+                    ...defaultState.tasksGettingQuery,
+                    ...action.payload.tasksQuery,
+                },
             };
         case ProjectsActionTypes.GET_PROJECTS:
             return {
@@ -50,19 +65,12 @@ export default (state: ProjectsState = defaultState, action: AnyAction): Project
                 current: [],
             };
         case ProjectsActionTypes.GET_PROJECTS_SUCCESS: {
-            const combinedWithPreviews = action.payload.array.map(
-                (project: any, index: number): Project => ({
-                    instance: project,
-                    preview: action.payload.previews[index],
-                }),
-            );
-
             return {
                 ...state,
                 initialized: true,
                 fetching: false,
                 count: action.payload.count,
-                current: combinedWithPreviews,
+                current: action.payload.array,
             };
         }
         case ProjectsActionTypes.GET_PROJECTS_FAILED: {
@@ -108,86 +116,93 @@ export default (state: ProjectsState = defaultState, action: AnyAction): Project
                 },
             };
         }
-        case ProjectsActionTypes.UPDATE_PROJECT: {
-            return {
-                ...state,
-            };
-        }
-        case ProjectsActionTypes.UPDATE_PROJECT_SUCCESS: {
-            return {
-                ...state,
-                current: state.current.map(
-                    (project): Project => ({
-                        ...project,
-                        instance: project.instance.id === action.payload.project.id ?
-                            action.payload.project : project.instance,
-                    }),
-                ),
-            };
-        }
-        case ProjectsActionTypes.UPDATE_PROJECT_FAILED: {
-            return {
-                ...state,
-                current: state.current.map(
-                    (project): Project => ({
-                        ...project,
-                        instance: project.instance.id === action.payload.project.id ?
-                            action.payload.project : project.instance,
-                    }),
-                ),
-            };
-        }
         case ProjectsActionTypes.DELETE_PROJECT: {
             const { projectId } = action.payload;
-            const { deletes } = state.activities;
-
-            deletes[projectId] = false;
 
             return {
                 ...state,
                 activities: {
                     ...state.activities,
                     deletes: {
-                        ...deletes,
+                        ...state.activities.deletes,
+                        [projectId]: false,
                     },
                 },
             };
         }
         case ProjectsActionTypes.DELETE_PROJECT_SUCCESS: {
             const { projectId } = action.payload;
-            const { deletes } = state.activities;
-
-            deletes[projectId] = true;
 
             return {
                 ...state,
                 activities: {
                     ...state.activities,
                     deletes: {
-                        ...deletes,
+                        ...state.activities.deletes,
+                        [projectId]: true,
                     },
                 },
             };
         }
         case ProjectsActionTypes.DELETE_PROJECT_FAILED: {
             const { projectId } = action.payload;
-            const { deletes } = state.activities;
-
-            delete deletes[projectId];
 
             return {
                 ...state,
                 activities: {
                     ...state.activities,
-                    deletes: {
-                        ...deletes,
-                    },
+                    deletes: omit(state.activities.deletes, projectId),
                 },
             };
         }
         case BoundariesActionTypes.RESET_AFTER_ERROR:
         case AuthActionTypes.LOGOUT_SUCCESS: {
             return { ...defaultState };
+        }
+        case ProjectsActionTypes.GET_PROJECT_PREVIEW: {
+            const { projectID } = action.payload;
+            const { previews } = state;
+            return {
+                ...state,
+                previews: {
+                    ...previews,
+                    [projectID]: {
+                        preview: '',
+                        fetching: true,
+                        initialized: false,
+                    },
+                },
+            };
+        }
+        case ProjectsActionTypes.GET_PROJECT_PREVIEW_SUCCESS: {
+            const { projectID, preview } = action.payload;
+            const { previews } = state;
+            return {
+                ...state,
+                previews: {
+                    ...previews,
+                    [projectID]: {
+                        preview,
+                        fetching: false,
+                        initialized: true,
+                    },
+                },
+            };
+        }
+        case ProjectsActionTypes.GET_PROJECT_PREVIEW_FAILED: {
+            const { projectID } = action.payload;
+            const { previews } = state;
+            return {
+                ...state,
+                previews: {
+                    ...previews,
+                    [projectID]: {
+                        ...previews[projectID],
+                        fetching: false,
+                        initialized: true,
+                    },
+                },
+            };
         }
         default:
             return state;

@@ -2,6 +2,7 @@
 title: 'REST API guide'
 linkTitle: 'REST API'
 weight: 12
+description: 'Instructions on how to interact with REST API and getting swagger documentation.'
 ---
 
 To access swagger documentation you need to be authorized.
@@ -17,13 +18,12 @@ Make a request to a resource stored on a server and the server will respond with
 The HTTP protocol is used to transport a data.
 Requests are divided into groups:
 
-- `auth` - user authorization queries
+- `auth` - user authentication queries
 - `comments` - requests to post/delete comments to issues
 - `issues` - update, delete and view problem comments
 - `jobs` -requests to manage the job
 - `lambda` - requests to work with lambda function
 - `projects` - project management queries
-- `restrictions` - requests for restrictions
 - `reviews` -adding and removing the review of the job
 - `server` - server information requests
 - `tasks` - requests to manage tasks
